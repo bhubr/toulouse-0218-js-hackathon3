@@ -12,6 +12,7 @@ import InputAdornment from '@material-ui/core/InputAdornment'
 import InputLabel from '@material-ui/core/InputLabel'
 import TitleIcon from '@material-ui/icons/Title'
 import MediaUploader from '../vendor/MediaUploader'
+import uploadId from '../helpers/uploadId'
 import { clientId } from '../youtube.json'
 
 const styles = {
@@ -42,12 +43,14 @@ class VideoUpload extends React.Component {
       group: '',
       analysisGrid: '',
       transfer: {
+        id: '',
         started: false,
         done: false,
         bytesDone: 0,
         bytesTotal: 0,
         chunksDone: 0,
-        chunksTotal: 0
+        chunksTotal: 0,
+        percentDone: 0.0
       }
     }
     this.onChange = this.onChange.bind(this)
@@ -69,16 +72,17 @@ class VideoUpload extends React.Component {
   onProgress (evt) {
     const { loaded, total } = evt
     const { transfer } = this.state
-    let { chunksDone, bytesDone } = transfer
+    let { chunksDone, bytesDone, bytesTotal } = transfer
     if (loaded === CHUNK_SIZE) {
       chunksDone += 1
       bytesDone = chunksDone * CHUNK_SIZE
     } else {
       bytesDone = chunksDone * CHUNK_SIZE + loaded
     }
+    const percentDone = 100 * bytesDone / bytesTotal
 
     this.setState((prevState, props) => ({
-      transfer: { ...transfer, bytesDone, chunksDone }
+      transfer: { ...transfer, bytesDone, chunksDone, percentDone }
     }))
   }
   onComplete (response) {
@@ -89,7 +93,7 @@ class VideoUpload extends React.Component {
     })
     setTimeout(() => this.setState({
       transfer: {
-        started: false, done: false, bytesDone: 0, bytesTotal: 0
+        id: '', started: false, done: false, bytesDone: 0, bytesTotal: 0, percentDone: 0.0
       }
     }), 1500)
   }
@@ -112,8 +116,9 @@ class VideoUpload extends React.Component {
     const { transfer } = this.state
     const chunksTotal = Math.ceil(file.size / CHUNK_SIZE)
     console.log('before starting transfer', { ...transfer, started: true, chunksTotal, bytesTotal: file.size })
+    const id = uploadId()
     this.setState({
-      transfer: { ...transfer, started: true, chunksTotal, bytesTotal: file.size }
+      transfer: { ...transfer, id, started: true, chunksTotal, bytesTotal: file.size }
     })
     mediaUploader.upload()
   }
@@ -121,9 +126,7 @@ class VideoUpload extends React.Component {
     // const { clientId } = this.props
     const redirectUri = window.location.origin + '/auth-callback'
     const { classes } = this.props
-    const { transfer } = this.state
-    const { bytesDone, bytesTotal } = transfer
-    const percentDone = 100 * bytesDone / bytesTotal
+    const { transfer: { started, percentDone } } = this.state
     return (
       <div className="VideoUpload">
 
@@ -140,7 +143,7 @@ class VideoUpload extends React.Component {
           <Typography variant="title" gutterBottom>
             Déposer une vidéo
           </Typography>
-          { transfer.started && <LinearProgress variant="determinate" value={percentDone} /> }
+          { started && <LinearProgress variant="determinate" value={percentDone} /> }
           <div>
             <Button type="button" color="default" variant="raised" className={classes.margin}>
               <input
