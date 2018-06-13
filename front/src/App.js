@@ -11,11 +11,31 @@ class App extends Component {
     this.toggleModal = this.toggleModal.bind(this)
     this.closeModal = this.closeModal.bind(this)
     this.setTokenData = this.setTokenData.bind(this)
+    this.onGeolocationSuccess = this.onGeolocationSuccess.bind(this)
+    this.onGeolocationError = this.onGeolocationError.bind(this)
     this.state = {
       modalOpen: false,
       debug: false,
-      tokenData: null
+      tokenData: null,
+      location: null
     }
+  }
+  onGeolocationError (err) {
+    // PositionError with code 1: user refused geolocation
+    if (err.code === 1) {
+      console.error('forget about geolocation!!')
+    } else {
+      console.error('unknown error', err)
+    }
+  }
+  onGeolocationSuccess (position) {
+    const { timestamp, coords: { latitude, longitude } } = position
+    this.setState({
+      location: { timestamp, latitude, longitude }
+    })
+  }
+  componentDidMount () {
+    navigator.geolocation.getCurrentPosition(this.onGeolocationSuccess, this.onGeolocationError)
   }
   toggleModal () {
     this.setState((prevState, props) => ({
@@ -32,7 +52,7 @@ class App extends Component {
       this.toggleModal()
     }
   }
-  setTokenData(tokenData) {
+  setTokenData (tokenData) {
     this.setState({
       tokenData
     })
