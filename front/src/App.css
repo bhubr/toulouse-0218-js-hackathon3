@@ -1,5 +1,42 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto');
+
+body {
+  margin: 0;
+}
+.App {
+  position: relative;
+  font-family: 'Roboto', sans-serif;
+}
 .navbar {
   height: 40px;
   background: #000;
   color: #eee;
+}
+
+.navbar a {
+  color: #eee;
+  text-decoration: none;
+  padding: 10px;
+  display: inline-block;
+}
+
+.App .modal {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  right: 10%;
+  bottom: 10%;
+  background: #eee;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 30px;
+}
+
+.App .overlay {
+  background: rgba(0, 0, 0, 0.89);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
