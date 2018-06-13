@@ -1,10 +1,14 @@
 import React, { Component } from 'react'
+import './App.css'
 
 class App extends Component {
-  render() {
+  render () {
     return (
       <div>
-        Happy Hacking!!!
+        <nav className="navbar">
+          <a href="#">Auth</a>
+        </nav>
+
       </div>
     )
   }
