@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "@firebase/firestore": "^0.5.4",
+    "@material-ui/core": "^1.2.1",
+    "@material-ui/icons": "^1.1.0",
     "firebase": "^5.0.4",
     "react": "^16.4.0",
     "react-dom": "^16.4.0",

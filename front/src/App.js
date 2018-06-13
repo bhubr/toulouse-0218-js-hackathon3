@@ -7,17 +7,24 @@ class App extends Component {
   constructor (props) {
     super(props)
     this.overlayRef = React.createRef()
+    this.toggleDebug = this.toggleDebug.bind(this)
     this.toggleModal = this.toggleModal.bind(this)
     this.closeModal = this.closeModal.bind(this)
     this.setTokenData = this.setTokenData.bind(this)
     this.state = {
       modalOpen: false,
+      debug: false,
       tokenData: null
     }
   }
   toggleModal () {
     this.setState((prevState, props) => ({
       modalOpen: ! prevState.modalOpen
+    }))
+  }
+  toggleDebug () {
+    this.setState((prevState, props) => ({
+      debug: ! prevState.debug
     }))
   }
   closeModal (e) {
@@ -45,9 +52,10 @@ class App extends Component {
 
         <nav className="navbar">
           <a href="#" onClick={this.toggleModal}>Auth</a>
+          <a href="#" onClick={this.toggleDebug}>Dbg</a>
         </nav>
 
-        <AuthCallback setTokenData={this.setTokenData} />
+        <AuthCallback setTokenData={this.setTokenData} debug={this.state.debug} />
         <VideoUpload accessToken={accessToken} />
 
       </div>

@@ -43,15 +43,20 @@ class AuthCallback extends React.Component {
   }
 
   render() {
+    const { debug } = this.props
     return (
       <div>
-        <h2>OAuth2 status</h2>
-        <h3>Auth response</h3>
-        <p>{ JSON.stringify(this.state.oauthStep1) }</p>
-        <h3>Token validation response</h3>
-        <p>{ JSON.stringify(this.state.oauthStep2) }</p>
-        <h3>Video data</h3>
-        <p>{ JSON.stringify(this.state.data) }</p>
+      { debug && (
+        <div>
+          <h2>OAuth2 status</h2>
+          <h3>Auth response</h3>
+          <p>{ JSON.stringify(this.state.oauthStep1) }</p>
+          <h3>Token validation response</h3>
+          <p>{ JSON.stringify(this.state.oauthStep2) }</p>
+          <h3>Video data</h3>
+          <p>{ JSON.stringify(this.state.data) }</p>
+        </div>
+        ) }
       </div>
     )
   }
