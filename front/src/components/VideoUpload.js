@@ -86,11 +86,14 @@ class VideoUpload extends React.Component {
     }))
   }
   onComplete (response) {
-    console.log('onComplete', response)
+    // console.log('onComplete', response)
+    const parsedRes = JSON.parse(response)
+    console.log()
     const { transfer } = this.state
     this.setState({
       ...transfer, done: true
     })
+    this.props.writeVideo(this.state.title, parsedRes.id, parsedRes.snippet.thumbnails.medium.url)
     setTimeout(() => this.setState({
       transfer: {
         id: '', started: false, done: false, bytesDone: 0, bytesTotal: 0, percentDone: 0.0

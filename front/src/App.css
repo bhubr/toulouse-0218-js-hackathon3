@@ -21,6 +21,7 @@ body {
 }
 
 .App .modal {
+  z-index: 1000;
   position: absolute;
   top: 10%;
   left: 10%;
