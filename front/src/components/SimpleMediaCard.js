@@ -21,6 +21,7 @@ const styles = {
 function SimpleMediaCard({ video, classes }) {
   const title = video.val().title
   const thumbnailUrl = video.val().thumbnailUrl
+  const articleUrl = video.val().articleUrl
   return (
     <div>
       <Card className={classes.card}>
@@ -35,11 +36,11 @@ function SimpleMediaCard({ video, classes }) {
           </Typography>
         </CardContent>
         <CardActions>
-          <Button size="small" color="primary">
+          {/* <Button size="small" color="primary">
             Share
-          </Button>
+          </Button> */}
           <Button size="small" color="primary">
-            Learn More
+            <a href={articleUrl} target="_blank">Lire l&apos;article</a>
           </Button>
         </CardActions>
       </Card>

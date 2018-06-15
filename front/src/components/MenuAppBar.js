@@ -10,13 +10,14 @@ import IconButton from '@material-ui/core/IconButton'
 import MenuIcon from '@material-ui/icons/Menu'
 import AccountCircle from '@material-ui/icons/AccountCircle'
 import CloudUpload from '@material-ui/icons/CloudUpload'
+import QuestionAnswer from '@material-ui/icons/QuestionAnswer'
 import Switch from '@material-ui/core/Switch'
 import FormControlLabel from '@material-ui/core/FormControlLabel'
 import FormGroup from '@material-ui/core/FormGroup'
 import MenuItem from '@material-ui/core/MenuItem'
 import Menu from '@material-ui/core/Menu'
 import WinNewsLogo from '../images/WinNews_jaune.png'
-import { ABOUT, CONTRIBUTOR } from '../urls'
+import { HOME, ABOUT, CONTRIBUTOR } from '../urls'
 
 const styles = {
   root: {
@@ -29,8 +30,8 @@ const styles = {
     marginLeft: -12,
     marginRight: 20,
   },
-  white: {
-    color: '#fff'
+  yellow: {
+    color: '#ffdc00'
   }
 }
 
@@ -60,10 +61,15 @@ class MenuAppBar extends React.Component {
       <div className={classes.root}>
         <AppBar position="static">
           <Toolbar>
-            <Link to={ABOUT} className={classes.root}>
-              <Typography variant="title" color="inherit" className={classes.flex}>
+            <Link to={HOME}>
+              <Typography variant="title" color="inherit">
                 <img src={WinNewsLogo} style={{maxWidth: '24px'}} />
               </Typography>
+            </Link>
+            <Link to={ABOUT} className={classes.root}>
+              <IconButton className={classes.yellow}>
+                <QuestionAnswer />
+              </IconButton>
             </Link>
             {! user && (
               <IconButton
@@ -78,7 +84,7 @@ class MenuAppBar extends React.Component {
             {user && (
               <div>
                 <Link to={CONTRIBUTOR}>
-                  <IconButton className={classes.white}>
+                  <IconButton className={classes.yellow}>
                     <CloudUpload />
                   </IconButton>
                 </Link>
@@ -86,7 +92,7 @@ class MenuAppBar extends React.Component {
                   aria-owns={open ? 'menu-appbar' : null}
                   aria-haspopup="true"
                   onClick={this.handleMenu}
-                  color="inherit"
+                  className={classes.yellow}
                 >
                   <AccountCircle />
                 </IconButton>

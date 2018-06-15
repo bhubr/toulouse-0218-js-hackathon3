@@ -11,17 +11,25 @@ import Input from '@material-ui/core/Input'
 import InputAdornment from '@material-ui/core/InputAdornment'
 import InputLabel from '@material-ui/core/InputLabel'
 import TitleIcon from '@material-ui/icons/Title'
+import Link from '@material-ui/icons/Link'
 import MediaUploader from '../vendor/MediaUploader'
+import Collapse from '@material-ui/core/Collapse'
 import uploadId from '../helpers/uploadId'
 import { clientId } from '../youtube.json'
 
 const styles = {
+  container: {
+    textAlign: 'center'
+  },
   form: {
     padding: 40
   },
   margin: {
     width: '100%',
     marginBottom: 30
+  },
+  marginVert: {
+    margin: 30
   },
   center: {
     textAlign:'center'
@@ -39,6 +47,7 @@ class VideoUpload extends React.Component {
     this.state = {
       file: null,
       title: '',
+      articleUrl: '',
       description: '',
       group: '',
       analysisGrid: '',
@@ -93,7 +102,7 @@ class VideoUpload extends React.Component {
     this.setState({
       ...transfer, done: true
     })
-    this.props.writeVideo(this.state.title, parsedRes.id, parsedRes.snippet.thumbnails.medium.url)
+    this.props.writeVideo(this.state.title, this.state.articleUrl, parsedRes.id, parsedRes.snippet.thumbnails.medium.url)
     setTimeout(() => this.setState({
       transfer: {
         id: '', started: false, done: false, bytesDone: 0, bytesTotal: 0, percentDone: 0.0
@@ -128,59 +137,86 @@ class VideoUpload extends React.Component {
   render () {
     // const { clientId } = this.props
     const redirectUri = window.location.origin + '/auth-callback'
-    const { classes } = this.props
+    const { classes, accessToken } = this.props
     const { transfer: { started, percentDone } } = this.state
     return (
-      <div className="VideoUpload">
+      <div className={classes.container}>
 
-        <form action="https://accounts.google.com/o/oauth2/v2/auth">
-          <input type="hidden" name="response_type" value="token" />
-          <input type="hidden" name="scope" value="https://www.googleapis.com/auth/youtube.force-ssl" />
-          <input type="hidden" name="include_granted_scopes" value="true" />
-          <input type="hidden" name="state" value="pass-through value" />
-          <input type="hidden" name="client_id" value={clientId} />
-          <input type="hidden" name="redirect_uri" value={redirectUri} />
-          <input type="submit" value="submit" />
-        </form>
-        <form className={classes.form} onSubmit={this.onSubmit}>
-          <Typography variant="title" gutterBottom>
-            Déposer une vidéo
-          </Typography>
-          { started && <LinearProgress variant="determinate" value={percentDone} /> }
-          <div>
-            <Button type="button" color="default" variant="raised" className={classes.margin}>
-              <input
-                className={classes.inputFile}
-                id="file-upload"
-                type="file"
-                onChange={this.onChangeFile} />
-              <label htmlFor="file-upload">Déposer une vidéo</label>
+        <Collapse in={!accessToken}>
+          <form action="https://accounts.google.com/o/oauth2/v2/auth">
+            <input type="hidden" name="response_type" value="token" />
+            <input type="hidden" name="scope" value="https://www.googleapis.com/auth/youtube.force-ssl" />
+            <input type="hidden" name="include_granted_scopes" value="true" />
+            <input type="hidden" name="state" value="pass-through value" />
+            <input type="hidden" name="client_id" value={clientId} />
+            <input type="hidden" name="redirect_uri" value={redirectUri} />
+            <Button type="submit" color="secondary" variant="raised" className={classes.marginVert}>
+              Authentification YouTube
             </Button>
-            <FormControl className={classes.margin}>
-              <InputLabel htmlFor="email">Titre de la vidéo</InputLabel>
-              <Input
-                className={classes.input}
-                id="title"
-                type="text"
-                name="title"
-                value={this.state.title}
-                onChange={this.onChange}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <TitleIcon />
-                  </InputAdornment>
-                }
-              />
-            </FormControl>
-            {/* <textarea name="description" placeholder="Description" value={this.state.description} onChange={this.onChange} /> */}
-          </div>
-          <div>
-            <Button type="submit" color="primary" variant="raised" disabled={!clientId}>
-              Enregistrer
-            </Button>
-          </div>
+          </form>
+        </Collapse>
+        
+        <Collapse in={!!accessToken}>
+          <form className={classes.form} onSubmit={this.onSubmit}>
+            <Typography variant="title" gutterBottom>
+              Déposer une vidéo
+            </Typography>
+            <Collapse in={!started}>
+              <div style={{marginBottom: '12px'}}>
+                <LinearProgress variant="determinate" value={percentDone} />
+              </div>
+            </Collapse>
+            <div>
+              <Button type="button" color="default" variant="raised" className={classes.margin}>
+                <input
+                  className={classes.inputFile}
+                  id="file-upload"
+                  type="file"
+                  onChange={this.onChangeFile} />
+                <label htmlFor="file-upload">Déposer une vidéo</label>
+              </Button>
+              <FormControl className={classes.margin}>
+                <InputLabel htmlFor="email">Titre de la vidéo</InputLabel>
+                <Input
+                  className={classes.input}
+                  id="title"
+                  type="text"
+                  name="title"
+                  value={this.state.title}
+                  onChange={this.onChange}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <TitleIcon />
+                    </InputAdornment>
+                  }
+                />
+              </FormControl>
+              <FormControl className={classes.margin}>
+                <InputLabel htmlFor="email">Lien vers l&apos;article</InputLabel>
+                <Input
+                  className={classes.input}
+                  id="articleUrl"
+                  type="text"
+                  name="articleUrl"
+                  value={this.state.articleUrl}
+                  onChange={this.onChange}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <Link />
+                    </InputAdornment>
+                  }
+                />
+              </FormControl>
+              {/* <textarea name="description" placeholder="Description" value={this.state.description} onChange={this.onChange} /> */}
+            </div>
+            <div>
+              <Button type="submit" color="primary" variant="raised" disabled={!clientId}>
+                Enregistrer
+              </Button>
+            </div>
 
-        </form>
+          </form>
+        </Collapse>
       </div>
     )
   }

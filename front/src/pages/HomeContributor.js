@@ -7,8 +7,10 @@ class HomeContributor extends React.Component {
   render () {
     const { accessToken, writeVideo } = this.props
     return (
-      <Grid container spacing={8}>
-        <VideoUpload accessToken={accessToken} writeVideo={writeVideo} />
+      <Grid container spacing={8} justify="center">
+        <Grid item xs={12} sm={6} md={4}>
+          <VideoUpload accessToken={accessToken} writeVideo={writeVideo} />
+        </Grid>
       </Grid>
     )
   }

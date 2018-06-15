@@ -7,7 +7,7 @@ class HomeReader extends React.Component {
   render () {
     const { videos } = this.props
     return (
-      <Grid container spacing={8}>
+      <Grid container spacing={8} style={{marginTop: '30px'}}>
         {
           videos.map((v, k) => (
             <Grid key={k} item xs={12} sm={6} md={4}>

@@ -1,8 +1,8 @@
 import React from 'react'
-// import { connect } from 'react-redux'
-// import { setTokenData } from './actions'
 import parseQuery from '../helpers/parseQuery'
 import LocalStorageJSON from '../helpers/LocalStorageJSON'
+import { withRouter } from 'react-router-dom'
+import { CONTRIBUTOR } from '../urls';
 
 class AuthCallback extends React.Component {
   constructor (props) {
@@ -23,6 +23,7 @@ class AuthCallback extends React.Component {
     this.setState({
       oauthStep1
     })
+    oauthStep1.expires_at = Date.now() + 1000 * Number(oauthStep1.expires_in)
     this.storage.set(oauthStep1)
     this.props.setTokenData(oauthStep1)
     const baseUrl = 'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token='
@@ -32,6 +33,7 @@ class AuthCallback extends React.Component {
         oauthStep2 => {
           this._asyncRequest = null
           this.setState({oauthStep2})
+          this.props.history.push(CONTRIBUTOR)
         }
       )
   }
@@ -62,4 +64,4 @@ class AuthCallback extends React.Component {
   }
 }
 
-export default AuthCallback
+export default withRouter(AuthCallback)

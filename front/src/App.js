@@ -8,6 +8,7 @@ import AuthModal from './components/AuthModal'
 import HomeContributor from './pages/HomeContributor'
 import About from './pages/About'
 import AuthCallback from './components/AuthCallback'
+import LocalStorageJSON from './helpers/LocalStorageJSON'
 import { HOME, CONTRIBUTOR, ABOUT } from './urls'
 
 function writeUserData (userId, name, email, imageUrl) {
@@ -110,6 +111,16 @@ class App extends Component {
     this.setState(pushChildToState(child))
   }
   componentDidMount () {
+    const storage = new LocalStorageJSON('youtubeOAuth2')
+    const tokenData = storage.get()
+    // console.log(Date.now(), tokenData.expires_at, Date.now() - tokenData.expires_at)
+    if(tokenData && Date.now() < tokenData.expires_at) {
+      this.setState({
+        tokenData
+      })
+      console.log(tokenData)
+    }
+
     firebase.auth().onAuthStateChanged(this.onAuthStateChanged)
 
     navigator.geolocation.getCurrentPosition(this.onGeolocationSuccess, this.onGeolocationError)
@@ -136,10 +147,7 @@ class App extends Component {
       tokenData
     })
   }
-  writeVideo (title, id, thumbnailUrl) {
-    // writeNewPost(firebase.auth().currentUser.uid, username,
-    //   firebase.auth().currentUser.photoURL,
-    //   title, text)
+  writeVideo (title, articleUrl, id, thumbnailUrl) {
     if (!firebase.auth().currentUser) {
       console.log("can't post, no user logged-in")
       return
@@ -149,6 +157,7 @@ class App extends Component {
       author: this.state.user.displayName,
       uid,
       id,
+      articleUrl,
       thumbnailUrl,
       title,
       latitude: this.state.location.latitude,
