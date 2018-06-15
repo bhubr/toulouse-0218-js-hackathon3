@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
+import { BrowserRouter as Router, Switch } from 'react-router-dom'
 import firebase, { auth } from 'firebase'
+import Layout from './components/Layout'
+import HomeReader from './pages/HomeReader'
+import HomeContributor from './pages/HomeContributor'
 import AuthCallback from './components/AuthCallback'
-import VideoUpload from './components/VideoUpload'
-import SimpleMediaCard from './components/SimpleMediaCard'
-import MenuAppBar from './components/MenuAppBar'
-import Grid from '@material-ui/core/Grid'
 import './App.css'
 
 function writeUserData (userId, name, email, imageUrl) {
@@ -52,7 +52,7 @@ class App extends Component {
   onAuthStateChanged (loggedInUser) {
     // We ignore token refresh events.
     const { user } = this.state
-    if (loggedInUser && user && user.uid === user.uid) {
+    if (loggedInUser && user && loggedInUser.uid === user.uid) {
       return
     }
     this.setState({
@@ -146,7 +146,6 @@ class App extends Component {
     window.recaptchaVerifier.render().then(function (widgetId) {
       console.log('widget Id:', widgetId)
       window.recaptchaWidgetId = widgetId
-
     })
   }
   toggleModal () {
@@ -255,45 +254,40 @@ class App extends Component {
   }
 
   render () {
-    const { modalOpen, tokenData, promptSmsCode, smsCode, user } = this.state
+    const { videos, modalOpen, tokenData, promptSmsCode, smsCode, user } = this.state
+    const { writeVideo } = this
     const accessToken = tokenData ? tokenData.access_token : null
     return (
-      <div className="App">
-        {modalOpen &&
-          <div ref={this.overlayRef} className="overlay" onClick={this.closeModal}>
-            <div style={{paddingTop: '100px'}} className="modal">
-              <button onClick={this.onSignin}>Sign in</button>
-              <button onClick={this.writePost}>writePost</button>
-              <button onClick={() => console.log('pouet')}>pouet</button>
+      <Router>
+        <div className="App">
+          {modalOpen &&
+            <div ref={this.overlayRef} className="overlay" onClick={this.closeModal}>
+              <div style={{paddingTop: '100px'}} className="modal">
+                <button onClick={this.onSignin}>Sign in</button>
+                <button onClick={this.writePost}>writePost</button>
+                <button onClick={() => console.log('pouet')}>pouet</button>
+              </div>
             </div>
-          </div>
-        }
-
-        <MenuAppBar user={user} />
-        <nav className="navbar">
-          <a href="#" onClick={this.toggleModal}>Auth</a>
-          <a href="#" onClick={this.toggleDebug}>Dbg</a>
-        </nav>
-
-        {promptSmsCode && <form onSubmit={this.handleSubmitSmsCode}>
-          <input onChange={this.handleSmsCodeChange} value={smsCode} />
-          <input type="submit" value="submit" />
-        </form>}
-
-        <AuthCallback setTokenData={this.setTokenData} debug={this.state.debug} />
-        <VideoUpload accessToken={accessToken} writeVideo={this.writeVideo} />
-
-        <Grid container spacing={8}>
-          {
-            this.state.videos.map((v, k) => (
-              <Grid key={k} item xs={12} sm={6} md={4}>
-                <SimpleMediaCard video={v} />
-              </Grid>
-            ))
           }
-        </Grid>
 
-      </div>
+          <nav className="navbar">
+            <a href="#" onClick={this.toggleModal}>Auth</a>
+            <a href="#" onClick={this.toggleDebug}>Dbg</a>
+          </nav>
+
+          {promptSmsCode && <form onSubmit={this.handleSubmitSmsCode}>
+            <input onChange={this.handleSmsCodeChange} value={smsCode} />
+            <input type="submit" value="submit" />
+          </form>}
+
+          <AuthCallback setTokenData={this.setTokenData} debug={this.state.debug} />
+
+          <Switch>
+            <Layout exact path="/" component={HomeReader} user={user} videos={videos} />
+            <Layout exact path="/contributor" component={HomeContributor} user={user} accessToken={accessToken} writeVideo={writeVideo} />
+          </Switch>
+        </div>
+      </Router>
     )
   }
 }
