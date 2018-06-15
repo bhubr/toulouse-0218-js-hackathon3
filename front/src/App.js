@@ -2,10 +2,13 @@ import React, { Component } from 'react'
 import { BrowserRouter as Router, Switch } from 'react-router-dom'
 import firebase, { auth } from 'firebase'
 import Layout from './components/Layout'
+import MenuAppBar from './components/MenuAppBar'
 import HomeReader from './pages/HomeReader'
+import AuthModal from './components/AuthModal'
 import HomeContributor from './pages/HomeContributor'
+import About from './pages/About'
 import AuthCallback from './components/AuthCallback'
-import './App.css'
+import { HOME, CONTRIBUTOR, ABOUT } from './urls'
 
 function writeUserData (userId, name, email, imageUrl) {
   firebase.database().ref('users/' + userId).set({
@@ -22,18 +25,22 @@ const pushChildToState = child => (prevState, props) => {
 }
 
 class App extends Component {
+
+  handleOpenModal = () => {
+    this.setState({ modalOpen: true });
+  }
+
+  handleCloseModal = () => {
+    this.setState({ modalOpen: false });
+  }
+
   constructor (props) {
     super(props)
     this.overlayRef = React.createRef()
-    this.handleSmsCodeChange = this.handleSmsCodeChange.bind(this)
-    this.handleSubmitSmsCode = this.handleSubmitSmsCode.bind(this)
     this.onAuthStateChanged = this.onAuthStateChanged.bind(this)
-    this.onSignin = this.onSignin.bind(this)
-    this.writePost = this.writePost.bind(this)
+    this.onGoogleSignin = this.onGoogleSignin.bind(this)
     this.writeVideo = this.writeVideo.bind(this)
     this.toggleDebug = this.toggleDebug.bind(this)
-    this.toggleModal = this.toggleModal.bind(this)
-    this.closeModal = this.closeModal.bind(this)
     this.setTokenData = this.setTokenData.bind(this)
     this.onGeolocationSuccess = this.onGeolocationSuccess.bind(this)
     this.onGeolocationError = this.onGeolocationError.bind(this)
@@ -44,8 +51,6 @@ class App extends Component {
       tokenData: null,
       location: null,
       user: null,
-      promptSmsCode: false,
-      smsCode: '',
       videos: []
     }
   }
@@ -56,8 +61,12 @@ class App extends Component {
       return
     }
     this.setState({
-      user: loggedInUser
+      user: loggedInUser,
+      modalOpen: false
     })
+    if(loggedInUser) {
+      return
+    }
     console.log('onAuthStateChanged', loggedInUser)
     if (loggedInUser) {
       const { uid, displayName, email, photoURL } = loggedInUser
@@ -70,12 +79,11 @@ class App extends Component {
       // splashPage.style.display = '';
     }
   }
-  onSignin () {
+  onGoogleSignin () {
     firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
       .then(() => {
         const provider = new firebase.auth.GoogleAuthProvider()
         firebase.auth().signInWithPopup(provider)
-        firebase.auth().onAuthStateChanged(this.onAuthStateChanged)
       })
       .catch(error => {
         // Handle Errors here.
@@ -102,6 +110,8 @@ class App extends Component {
     this.setState(pushChildToState(child))
   }
   componentDidMount () {
+    firebase.auth().onAuthStateChanged(this.onAuthStateChanged)
+
     navigator.geolocation.getCurrentPosition(this.onGeolocationSuccess, this.onGeolocationError)
     const recentPostsRef = firebase.database().ref('videos').limitToLast(100)
     recentPostsRef.on('child_added', this.onChildAdded)
@@ -112,85 +122,19 @@ class App extends Component {
       }
     })
     //
-    const self = this
     firebase.auth().useDeviceLanguage()
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      'size': 'normal',
-      'callback': function (response) {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
-        console.log(response)
 
-        var phoneNumber = '+33661216212'
-        var appVerifier = window.recaptchaVerifier
-        firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
-          .then(function (confirmationResult) {
-            console.log('confirm', this, self, confirmationResult)
-            // SMS sent. Prompt user to type the code from the message, then sign the
-            // user in with confirmationResult.confirm(code).
-            self.setState({
-              promptSmsCode: true
-            })
-            window.confirmationResult = confirmationResult
-          })
-          .catch(function (error) {
-            console.log(error)
-            // Error; SMS not sent
-            // ...
-          })
-      },
-      'expired-callback': function () {
-        // Response expired. Ask user to solve reCAPTCHA again.
-        // ...
-      }
-    })
-    window.recaptchaVerifier.render().then(function (widgetId) {
-      console.log('widget Id:', widgetId)
-      window.recaptchaWidgetId = widgetId
-    })
-  }
-  toggleModal () {
-    this.setState((prevState, props) => ({
-      modalOpen: !prevState.modalOpen
-    }))
   }
   toggleDebug () {
     this.setState((prevState, props) => ({
       debug: !prevState.debug
     }))
   }
-  closeModal (e) {
-    if (e.target === this.overlayRef.current) {
-      this.toggleModal()
-    }
-  }
   setTokenData (tokenData) {
     console.log('setTokenData', tokenData)
     this.setState({
       tokenData
     })
-  }
-  handleSmsCodeChange (e) {
-    this.setState({
-      smsCode: e.target.value
-    })
-  }
-  handleSubmitSmsCode (e) {
-    e.preventDefault()
-    const self = this
-    window.confirmationResult.confirm(this.state.smsCode).then(function (result) {
-      // User signed in successfully.
-      var user = result.user
-      console.log(user)
-      self.setState({
-        user: user
-      })
-      // ...
-    })
-      .catch(function (error) {
-        console.error(error)
-        // User couldn't sign in (bad verification code?)
-        // ...
-      })
   }
   writeVideo (title, id, thumbnailUrl) {
     // writeNewPost(firebase.auth().currentUser.uid, username,
@@ -223,35 +167,6 @@ class App extends Component {
 
     return firebase.database().ref().update(updates)
   }
-  writePost () {
-    // writeNewPost(firebase.auth().currentUser.uid, username,
-    //   firebase.auth().currentUser.photoURL,
-    //   title, text)
-    if (!firebase.auth().currentUser) {
-      console.log("can't post, no user logged-in")
-      return
-    }
-    const uid = firebase.auth().currentUser.uid
-    const postData = {
-      author: 'benhubert',
-      uid,
-      body: 'Pouet pouet pouet ' + Date.now(),
-      title: 'title ' + Date.now(),
-      starCount: 0,
-      authorPic: firebase.auth().currentUser.photoURL
-    }
-    console.log(postData)
-
-    // Get a key for a new Post.
-    var newPostKey = firebase.database().ref().child('posts').push().key
-
-    // Write the new post's data simultaneously in the posts list and the user's post list.
-    var updates = {}
-    updates['/posts/' + newPostKey] = postData
-    updates['/user-posts/' + uid + '/' + newPostKey] = postData
-
-    return firebase.database().ref().update(updates)
-  }
 
   render () {
     const { videos, modalOpen, tokenData, promptSmsCode, smsCode, user } = this.state
@@ -260,31 +175,15 @@ class App extends Component {
     return (
       <Router>
         <div className="App">
-          {modalOpen &&
-            <div ref={this.overlayRef} className="overlay" onClick={this.closeModal}>
-              <div style={{paddingTop: '100px'}} className="modal">
-                <button onClick={this.onSignin}>Sign in</button>
-                <button onClick={this.writePost}>writePost</button>
-                <button onClick={() => console.log('pouet')}>pouet</button>
-              </div>
-            </div>
-          }
-
-          <nav className="navbar">
-            <a href="#" onClick={this.toggleModal}>Auth</a>
-            <a href="#" onClick={this.toggleDebug}>Dbg</a>
-          </nav>
-
-          {promptSmsCode && <form onSubmit={this.handleSubmitSmsCode}>
-            <input onChange={this.handleSmsCodeChange} value={smsCode} />
-            <input type="submit" value="submit" />
-          </form>}
+          <AuthModal open={modalOpen} handleOpen={this.handleOpenModal} handleClose={this.handleCloseModal} onGoogleSignin={this.onGoogleSignin} />
+          <MenuAppBar user={user} handleOpenModal={this.handleOpenModal} />
 
           <AuthCallback setTokenData={this.setTokenData} debug={this.state.debug} />
 
           <Switch>
-            <Layout exact path="/" component={HomeReader} user={user} videos={videos} />
-            <Layout exact path="/contributor" component={HomeContributor} user={user} accessToken={accessToken} writeVideo={writeVideo} />
+            <Layout exact path={HOME} component={HomeReader} user={user} videos={videos} />
+            <Layout exact path={ABOUT} component={About} />
+            <Layout exact path={CONTRIBUTOR} component={HomeContributor} user={user} accessToken={accessToken} writeVideo={writeVideo} />
           </Switch>
         </div>
       </Router>

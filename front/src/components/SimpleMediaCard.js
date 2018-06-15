@@ -21,7 +21,6 @@ const styles = {
 function SimpleMediaCard({ video, classes }) {
   const title = video.val().title
   const thumbnailUrl = video.val().thumbnailUrl
-  console.log(title, thumbnailUrl)
   return (
     <div>
       <Card className={classes.card}>
