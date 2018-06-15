@@ -1,17 +1,18 @@
 import React, { Component } from 'react'
-import * as firebase from 'firebase'
+import firebase, { auth } from 'firebase'
 import AuthCallback from './components/AuthCallback'
 import VideoUpload from './components/VideoUpload'
 import SimpleMediaCard from './components/SimpleMediaCard'
-import Grid from '@material-ui/core/Grid';
+import MenuAppBar from './components/MenuAppBar'
+import Grid from '@material-ui/core/Grid'
 import './App.css'
 
-function writeUserData(userId, name, email, imageUrl) {
+function writeUserData (userId, name, email, imageUrl) {
   firebase.database().ref('users/' + userId).set({
     username: name,
     email: email,
-    profile_picture : imageUrl
-  });
+    profile_picture: imageUrl
+  })
 }
 
 const pushChildToState = child => (prevState, props) => {
@@ -24,6 +25,8 @@ class App extends Component {
   constructor (props) {
     super(props)
     this.overlayRef = React.createRef()
+    this.handleSmsCodeChange = this.handleSmsCodeChange.bind(this)
+    this.handleSubmitSmsCode = this.handleSubmitSmsCode.bind(this)
     this.onAuthStateChanged = this.onAuthStateChanged.bind(this)
     this.onSignin = this.onSignin.bind(this)
     this.writePost = this.writePost.bind(this)
@@ -41,24 +44,24 @@ class App extends Component {
       tokenData: null,
       location: null,
       user: null,
+      promptSmsCode: false,
+      smsCode: '',
       videos: []
     }
   }
-  onAuthStateChanged (user) {
-    let currentUID
+  onAuthStateChanged (loggedInUser) {
     // We ignore token refresh events.
-    if (user && currentUID === user.uid) {
+    const { user } = this.state
+    if (loggedInUser && user && user.uid === user.uid) {
       return
     }
     this.setState({
-      user
+      user: loggedInUser
     })
-    console.log('onAuthStateChanged', user)
-    // cleanupUi()
-    if (user) {
-      currentUID = user.uid;
-      // splashPage.style.display = 'none';
-      writeUserData(user.uid, user.displayName, user.email, user.photoURL);
+    console.log('onAuthStateChanged', loggedInUser)
+    if (loggedInUser) {
+      const { uid, displayName, email, photoURL } = loggedInUser
+      writeUserData(uid, displayName, email, photoURL)
       // startDatabaseQueries();
     } else {
       // // Set currentUID to null.
@@ -68,9 +71,18 @@ class App extends Component {
     }
   }
   onSignin () {
-    const provider = new firebase.auth.GoogleAuthProvider()
-    firebase.auth().signInWithPopup(provider)
-    firebase.auth().onAuthStateChanged(this.onAuthStateChanged)
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(() => {
+        const provider = new firebase.auth.GoogleAuthProvider()
+        firebase.auth().signInWithPopup(provider)
+        firebase.auth().onAuthStateChanged(this.onAuthStateChanged)
+      })
+      .catch(error => {
+        // Handle Errors here.
+        const errorCode = error.code
+        const errorMessage = error.message
+        console.log(errorCode, errorMessage)
+      })
   }
   onGeolocationError (err) {
     // PositionError with code 1: user refused geolocation
@@ -86,23 +98,65 @@ class App extends Component {
       location: { timestamp, latitude, longitude }
     })
   }
-  onChildAdded(child) {
+  onChildAdded (child) {
     this.setState(pushChildToState(child))
   }
   componentDidMount () {
     navigator.geolocation.getCurrentPosition(this.onGeolocationSuccess, this.onGeolocationError)
-    const recentPostsRef = firebase.database().ref('videos').limitToLast(100);
+    const recentPostsRef = firebase.database().ref('videos').limitToLast(100)
     recentPostsRef.on('child_added', this.onChildAdded)
 
+    auth().onAuthStateChanged((user) => {
+      if (user) {
+        this.setState({ user })
+      }
+    })
+    //
+    const self = this
+    firebase.auth().useDeviceLanguage()
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      'size': 'normal',
+      'callback': function (response) {
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        console.log(response)
+
+        var phoneNumber = '+33661216212'
+        var appVerifier = window.recaptchaVerifier
+        firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+          .then(function (confirmationResult) {
+            console.log('confirm', this, self, confirmationResult)
+            // SMS sent. Prompt user to type the code from the message, then sign the
+            // user in with confirmationResult.confirm(code).
+            self.setState({
+              promptSmsCode: true
+            })
+            window.confirmationResult = confirmationResult
+          })
+          .catch(function (error) {
+            console.log(error)
+            // Error; SMS not sent
+            // ...
+          })
+      },
+      'expired-callback': function () {
+        // Response expired. Ask user to solve reCAPTCHA again.
+        // ...
+      }
+    })
+    window.recaptchaVerifier.render().then(function (widgetId) {
+      console.log('widget Id:', widgetId)
+      window.recaptchaWidgetId = widgetId
+
+    })
   }
   toggleModal () {
     this.setState((prevState, props) => ({
-      modalOpen: ! prevState.modalOpen
+      modalOpen: !prevState.modalOpen
     }))
   }
   toggleDebug () {
     this.setState((prevState, props) => ({
-      debug: ! prevState.debug
+      debug: !prevState.debug
     }))
   }
   closeModal (e) {
@@ -115,6 +169,29 @@ class App extends Component {
     this.setState({
       tokenData
     })
+  }
+  handleSmsCodeChange (e) {
+    this.setState({
+      smsCode: e.target.value
+    })
+  }
+  handleSubmitSmsCode (e) {
+    e.preventDefault()
+    const self = this
+    window.confirmationResult.confirm(this.state.smsCode).then(function (result) {
+      // User signed in successfully.
+      var user = result.user
+      console.log(user)
+      self.setState({
+        user: user
+      })
+      // ...
+    })
+      .catch(function (error) {
+        console.error(error)
+        // User couldn't sign in (bad verification code?)
+        // ...
+      })
   }
   writeVideo (title, id, thumbnailUrl) {
     // writeNewPost(firebase.auth().currentUser.uid, username,
@@ -178,7 +255,7 @@ class App extends Component {
   }
 
   render () {
-    const { modalOpen, tokenData } = this.state
+    const { modalOpen, tokenData, promptSmsCode, smsCode, user } = this.state
     const accessToken = tokenData ? tokenData.access_token : null
     return (
       <div className="App">
@@ -192,10 +269,16 @@ class App extends Component {
           </div>
         }
 
+        <MenuAppBar user={user} />
         <nav className="navbar">
           <a href="#" onClick={this.toggleModal}>Auth</a>
           <a href="#" onClick={this.toggleDebug}>Dbg</a>
         </nav>
+
+        {promptSmsCode && <form onSubmit={this.handleSubmitSmsCode}>
+          <input onChange={this.handleSmsCodeChange} value={smsCode} />
+          <input type="submit" value="submit" />
+        </form>}
 
         <AuthCallback setTokenData={this.setTokenData} debug={this.state.debug} />
         <VideoUpload accessToken={accessToken} writeVideo={this.writeVideo} />
