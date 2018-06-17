@@ -10,6 +10,7 @@ import Button from '@material-ui/core/Button'
 import Input from '@material-ui/core/Input'
 import InputAdornment from '@material-ui/core/InputAdornment'
 import InputLabel from '@material-ui/core/InputLabel'
+import Chip from '@material-ui/core/Chip'
 import TitleIcon from '@material-ui/icons/Title'
 import Link from '@material-ui/icons/Link'
 import MediaUploader from '../vendor/MediaUploader'
@@ -36,8 +37,34 @@ const styles = {
   },
   inputFile: {
     display: 'none'
+  },
+  chip: {
+    margin: 5
   }
 }
+
+const allTags = [
+  {
+    key: 'astronomie',
+    label: 'Astronomie'
+  },
+  {
+    key: 'nature',
+    label: 'Nature'
+  },
+  {
+    key: 'technologie',
+    label: 'Technologie'
+  },
+  {
+    key: 'social',
+    label: 'Social'
+  },
+  {
+    key: 'humour',
+    label: 'Humour'
+  }
+]
 
 const CHUNK_SIZE = Math.pow(2, 20)
 
@@ -51,6 +78,7 @@ class VideoUpload extends React.Component {
       description: '',
       group: '',
       analysisGrid: '',
+      tags: [],
       transfer: {
         id: '',
         started: false,
@@ -62,11 +90,27 @@ class VideoUpload extends React.Component {
         percentDone: 0.0
       }
     }
+    this.onToggleTag = this.onToggleTag.bind(this)
     this.onChange = this.onChange.bind(this)
     this.onChangeFile = this.onChangeFile.bind(this)
     this.onSubmit = this.onSubmit.bind(this)
     this.onProgress = this.onProgress.bind(this)
     this.onComplete = this.onComplete.bind(this)
+  }
+  onToggleTag(tagKey) {
+    const { tags } = this.state
+    let newTags = [...tags]
+    const index = tags.findIndex(tk => tk === tagKey)
+    console.log(tags, tagKey, index)
+    if(index === -1) {
+      newTags.push(tagKey)
+    }
+    else {
+      newTags.splice(index, 1)
+    }
+    this.setState({
+      tags: newTags
+    })
   }
   onChange (e) {
     this.setState({
@@ -102,7 +146,7 @@ class VideoUpload extends React.Component {
     this.setState({
       ...transfer, done: true
     })
-    this.props.writeVideo(this.state.title, this.state.articleUrl, parsedRes.id, parsedRes.snippet.thumbnails.medium.url)
+    this.props.writeVideo(this.state.title, this.state.articleUrl, this.state.tags, parsedRes.id, parsedRes.snippet.thumbnails.medium.url)
     setTimeout(() => this.setState({
       transfer: {
         id: '', started: false, done: false, bytesDone: 0, bytesTotal: 0, percentDone: 0.0
@@ -138,7 +182,9 @@ class VideoUpload extends React.Component {
     // const { clientId } = this.props
     const redirectUri = window.location.origin + '/auth-callback'
     const { classes, accessToken } = this.props
-    const { transfer: { started, percentDone } } = this.state
+    const { transfer: { started, percentDone }, tags } = this.state
+    const styleSelected = { backgroundColor:  '#1e3278', color: '#fff' }
+    const styleDefault = {}
     return (
       <div className={classes.container}>
 
@@ -161,7 +207,7 @@ class VideoUpload extends React.Component {
             <Typography variant="title" gutterBottom>
               Déposer une vidéo
             </Typography>
-            <Collapse in={!started}>
+            <Collapse in={started}>
               <div style={{marginBottom: '12px'}}>
                 <LinearProgress variant="determinate" value={percentDone} />
               </div>
@@ -208,6 +254,15 @@ class VideoUpload extends React.Component {
                 />
               </FormControl>
               {/* <textarea name="description" placeholder="Description" value={this.state.description} onChange={this.onChange} /> */}
+              {
+                allTags.map((tag, k) => (
+                  <Chip
+                    key={k}
+                    label={tag.label}
+                    className={classes.chip}
+                    style={tags.includes(tag.key) ? styleSelected : styleDefault}
+                    onClick={e => this.onToggleTag(tag.key)} />))
+              }
             </div>
             <div>
               <Button type="submit" color="primary" variant="raised" disabled={!clientId}>

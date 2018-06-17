@@ -147,7 +147,7 @@ class App extends Component {
       tokenData
     })
   }
-  writeVideo (title, articleUrl, id, thumbnailUrl) {
+  writeVideo (title, articleUrl, tags, id, thumbnailUrl) {
     if (!firebase.auth().currentUser) {
       console.log("can't post, no user logged-in")
       return
@@ -159,6 +159,7 @@ class App extends Component {
       id,
       articleUrl,
       thumbnailUrl,
+      tags: tags.join(),
       title,
       latitude: this.state.location.latitude,
       longitude: this.state.location.longitude,
